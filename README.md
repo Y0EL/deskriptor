@@ -15,7 +15,7 @@
 1. Clone repository ini ke komputer lo.
 2. Jalankan `npm install` buat install semua dependencies.
 3. Tambahin file `.env.local` di root project lo, lalu masukin API Key kayak gini:  
-   `NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key`
+   `GEMINI_API=gemini_api_lo`
 4. Setelah itu, lo bisa jalankan aplikasi dengan `npm run dev` dan akses di `http://localhost:3000`.
 
 **Cara Pakai:**
