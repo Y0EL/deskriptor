@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Edit2, Trash2, Lock, Unlock } from 'lucide-react'
 import { marked } from 'marked'
@@ -20,9 +19,6 @@ import {
 } from "@/components/ui/dialog"
 import { motion, AnimatePresence } from 'framer-motion'
 import { Checkbox } from "@/components/ui/checkbox"
-
-// Inisialisasi Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API);
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -44,9 +40,19 @@ export default function Home() {
     fiturKhusus: '',
   })
   const [kontenHasil, setKontenHasil] = useState('')
-  const [riwayat, setRiwayat] = useState([])
-  const [riwayatTerpilih, setRiwayatTerpilih] = useState(null)
-  const [dialogState, setDialogState] = useState({ type: '', id: null, judul: '' })
+  const [riwayat, setRiwayat] = useState<Array<{
+    id: number;
+    judul: string;
+    konten: string;
+    timestamp: string;
+  }>>([])
+  const [riwayatTerpilih, setRiwayatTerpilih] = useState<{
+    id: number;
+    judul: string;
+    konten: string;
+    timestamp: string;
+  } | null>(null)
+  const [dialogState, setDialogState] = useState<{ type: string; id: number | null; judul: string }>({ type: '', id: null, judul: '' })
 
   useEffect(() => {
     const riwayatTersimpan = localStorage.getItem('riwayatDeskripsiProduk')
@@ -83,8 +89,7 @@ export default function Home() {
           setPassword('')
           setLoginAttempts(0)
           setNotification({
-            message: "Terlalu banyak percobaan",
-            description: "Silakan coba lagi nanti",
+            message: "Terlalu banyak percobaan. Silakan coba lagi nanti.",
             type: "error",
           })
         }
@@ -98,13 +103,12 @@ export default function Home() {
     setPassword('')
     localStorage.removeItem('loginExpiration')
     setNotification({
-      message: "Logout berhasil",
-      description: "Terima kasih telah menggunakan Deskriptor AI",
+      message: "Logout berhasil. Terima kasih telah menggunakan Deskriptor AI.",
       type: "success",
     })
   }
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
@@ -112,74 +116,21 @@ export default function Home() {
   const generateDescription = async () => {
     setIsLoading(true)
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
-
-      const prompt = `
-        Tugas:
-        1. Buat 5 judul kreatif menggunakan kata kunci seperti referensi ini: '${formData.judulProduk}'. Hindari hiperbola, gunakan bahasa yang serupa dengan judul asli namun lebih menarik.
-        2. Buat deskripsi produk yang detail dan informatif untuk perhiasan ${formData.namaToko} dengan SKU ${formData.skuProduk}.
-
-        Panduan untuk deskripsi produk:
-        - Mulai dengan paragraf pembuka yang menarik, menggambarkan keindahan dan keunikan produk.
-        - SKU produk: ${formData.skuProduk}
-        - Jenis: ${formData.kategori}
-        - Keunggulan produk: Jelaskan minimal 5 keunggulan produk secara detail.
-        - Detail produk:
-          * Bahan: ${formData.bahan || '[Deskripsikan bahan berkualitas tinggi yang sesuai]'}
-          * Kualitas: Jelaskan proses pembuatan dan standar kualitas yang diterapkan.
-          * Ukuran: ${formData.ukuran || '[Berikan ukuran yang spesifik dan akurat]'}
-          * Warna: ${formData.warna || '[Deskripsikan warna dan tampilan visual produk]'}
-          * Model: Jelaskan gaya dan desain produk secara rinci.
-          * Fitur Khusus: ${formData.fiturKhusus || '[Jelaskan fitur unik produk]'}
-        - Kesesuaian: Jelaskan untuk siapa produk ini cocok dan pada kesempatan apa bisa digunakan.
-        - Perawatan: Berikan tips perawatan produk untuk menjaga kualitas jangka panjang.
-        - Layanan pelanggan: Jelaskan secara detail layanan after-sales, garansi, dan komitmen kepuasan pelanggan.
-        - Akhiri dengan paragraf penutup yang memotivasi pembelian dan menekankan nilai produk.
-
-        Penting:
-        - Gunakan bahasa Indonesia yang sopan, menarik, dan persuasif.
-        - Sertakan fakta dan detail spesifik untuk meningkatkan kredibilitas.
-        - Gunakan variasi kalimat dan struktur paragraf untuk membuat deskripsi lebih dinamis.
-        - Masukkan kata-kata kunci yang relevan dengan produk untuk SEO.
-        - Panjang deskripsi minimal 300 kata.
-        - Jangan menambahkan catatan atau instruksi tambahan di akhir deskripsi.
-        - Hindari bahasa yang bisa dianggap tidak pantas atau sensual.
-        - Gunakan format Markdown untuk penekanan teks (contoh: **teks tebal**, *teks miring*).
-        - Gunakan # untuk judul utama, ## untuk sub-judul, dan ### untuk sub-sub-judul.
-      `;
-
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE",
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE",
-          },
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE",
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE",
-          },
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ formData }),
       });
 
-      const response = await result.response;
-      const text = response.text();
-      setKontenHasil(text);
-      tambahKeRiwayat(text);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const data = await response.json();
+      setKontenHasil(data.content);
+      tambahKeRiwayat(data.content);
     } catch (error) {
       console.error('Error generating content:', error);
       setKontenHasil('Terjadi kesalahan saat menghasilkan konten. Silakan coba lagi.');
@@ -189,7 +140,7 @@ export default function Home() {
     }
   }
 
-  const tambahKeRiwayat = (konten) => {
+  const tambahKeRiwayat = (konten: string) => {
     const itemRiwayatBaru = {
       id: Date.now(),
       judul: formData.judulProduk || 'Produk Tanpa Judul',
@@ -202,26 +153,24 @@ export default function Home() {
     setNotification({ message: 'Deskripsi berhasil ditambahkan ke riwayat.', type: 'success' })
   }
 
-  const handleUbahJudul = (id, judulBaru) => {
+  const handleUbahJudul = (id: number, judulBaru: string) => {
     const riwayatDiperbarui = riwayat.map((item) =>
       item.id === id ? { ...item, judul: judulBaru } : item
     )
     setRiwayat(riwayatDiperbarui)
     localStorage.setItem('riwayatDeskripsiProduk', JSON.stringify(riwayatDiperbarui))
     setNotification({
-      message: "Judul berhasil diubah",
-      description: `Judul telah diperbarui menjadi "${judulBaru}"`,
+      message: `Judul berhasil diubah menjadi "${judulBaru}"`,
       type: 'success'
     })
   }
 
-  const handleHapus = (id) => {
+  const handleHapus = (id: number) => {
     const riwayatDiperbarui = riwayat.filter((item) => item.id !== id)
     setRiwayat(riwayatDiperbarui)
     localStorage.setItem('riwayatDeskripsiProduk', JSON.stringify(riwayatDiperbarui))
     setNotification({
-      message: "Riwayat berhasil dihapus",
-      description: "Item riwayat telah dihapus dari daftar",
+      message: "Item riwayat telah dihapus dari daftar",
       type: 'success'
     })
   }
@@ -273,7 +222,7 @@ export default function Home() {
                     )}
                   </div>
                   <div className="flex items-center space-x-2 mt-2">
-                    <Checkbox id="rememberMe" checked={rememberMe} onCheckedChange={setRememberMe} />
+                    <Checkbox id="rememberMe" checked={rememberMe} onCheckedChange={(checked) => setRememberMe(checked === true)} />
                     <label htmlFor="rememberMe" className="text-sm text-gray-600">
                       Ingat saya selama 1 jam
                     </label>
@@ -295,6 +244,7 @@ export default function Home() {
             </Card>
           </motion.div>
         </AnimatePresence>
+      
       </div>
     )
   }
@@ -302,7 +252,7 @@ export default function Home() {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Deskriptor AI 🛍️</h1>
+        <h1 className="text-3xl font-bold">Deskriptor</h1>
         <div className="flex items-center gap-4">
           <ThemeToggle />
           {notification && (
@@ -441,7 +391,7 @@ export default function Home() {
                               onChange={(e) => setDialogState({ ...dialogState, judul: e.target.value })}
                             />
                             <DialogFooter>
-                              <Button onClick={() => handleUbahJudul(dialogState.id, dialogState.judul)}>
+                              <Button onClick={() => dialogState.id && handleUbahJudul(dialogState.id, dialogState.judul)}>
                                 Simpan Perubahan
                               </Button>
                             </DialogFooter>
@@ -452,7 +402,7 @@ export default function Home() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setDialogState({ type: 'delete', id: item.id })}
+                              onClick={() => setDialogState({ type: 'delete', id: item.id, judul: '' })}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -465,7 +415,7 @@ export default function Home() {
                               </DialogDescription>
                             </DialogHeader>
                             <DialogFooter>
-                              <Button variant="destructive" onClick={() => handleHapus(dialogState.id)}>
+                              <Button variant="destructive" onClick={() => dialogState.id && handleHapus(dialogState.id)}>
                                 Hapus
                               </Button>
                             </DialogFooter>
@@ -481,8 +431,8 @@ export default function Home() {
         </Card>
       </div>
       <footer className="border-t mt-8 py-4 text-center text-sm text-muted-foreground">
-      © 2024 Deskriptor AI. All rights reserved.
+        © 2024 Deskriptor. All rights reserved.
       </footer>
-      </div>
+    </div>
   )
 }
