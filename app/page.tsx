@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Edit2, Trash2, Lock, Unlock } from 'lucide-react'
-import { marked } from 'marked'
+import ResultsDisplay from '@/components/results-display'
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,18 @@ import {
 } from "@/components/ui/dialog"
 import { motion, AnimatePresence } from 'framer-motion'
 import { Checkbox } from "@/components/ui/checkbox"
+
+type ResultType = {
+  titles: string[];
+  description: string;
+}
+
+type HistoryItem = {
+  id: number;
+  judul: string;
+  konten: ResultType;
+  timestamp: string;
+}
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -39,19 +51,9 @@ export default function Home() {
     ukuran: '',
     fiturKhusus: '',
   })
-  const [kontenHasil, setKontenHasil] = useState('')
-  const [riwayat, setRiwayat] = useState<Array<{
-    id: number;
-    judul: string;
-    konten: string;
-    timestamp: string;
-  }>>([])
-  const [riwayatTerpilih, setRiwayatTerpilih] = useState<{
-    id: number;
-    judul: string;
-    konten: string;
-    timestamp: string;
-  } | null>(null)
+  const [result, setResult] = useState<ResultType | null>(null)
+  const [riwayat, setRiwayat] = useState<HistoryItem[]>([])
+  const [riwayatTerpilih, setRiwayatTerpilih] = useState<HistoryItem | null>(null)
   const [dialogState, setDialogState] = useState<{ type: string; id: number | null; judul: string }>({ type: '', id: null, judul: '' })
 
   useEffect(() => {
@@ -128,26 +130,25 @@ export default function Home() {
         throw new Error('Network response was not ok');
       }
 
-      const data = await response.json();
-      setKontenHasil(data.content);
-      tambahKeRiwayat(data.content);
+      const data: ResultType = await response.json();
+      setResult(data);
+      tambahKeRiwayat(data);
     } catch (error) {
       console.error('Error generating content:', error);
-      setKontenHasil('Terjadi kesalahan saat menghasilkan konten. Silakan coba lagi.');
       setNotification({ message: 'Terjadi kesalahan saat menghasilkan konten.', type: 'error' })
     } finally {
       setIsLoading(false)
     }
   }
 
-  const tambahKeRiwayat = (konten: string) => {
-    const itemRiwayatBaru = {
+  const tambahKeRiwayat = (konten: ResultType) => {
+    const itemRiwayatBaru: HistoryItem = {
       id: Date.now(),
       judul: formData.judulProduk || 'Produk Tanpa Judul',
       konten,
       timestamp: new Date().toLocaleString('id-ID'),
     }
-    const riwayatDiperbarui = [...riwayat, itemRiwayatBaru]
+    const riwayatDiperbarui = [itemRiwayatBaru, ...riwayat]
     setRiwayat(riwayatDiperbarui)
     localStorage.setItem('riwayatDeskripsiProduk', JSON.stringify(riwayatDiperbarui))
     setNotification({ message: 'Deskripsi berhasil ditambahkan ke riwayat.', type: 'success' })
@@ -244,7 +245,6 @@ export default function Home() {
             </Card>
           </motion.div>
         </AnimatePresence>
-      
       </div>
     )
   }
@@ -338,14 +338,7 @@ export default function Home() {
             <CardTitle>Konten Hasil</CardTitle>
           </CardHeader>
           <CardContent>
-            <div
-              className="prose dark:prose-invert h-[500px] overflow-y-auto"
-              dangerouslySetInnerHTML={{
-                __html: riwayatTerpilih
-                  ? marked.parse(riwayatTerpilih.konten)
-                  : marked.parse(kontenHasil)
-              }}
-            />
+            <ResultsDisplay result={riwayatTerpilih ? riwayatTerpilih.konten : result} />
           </CardContent>
         </Card>
 
@@ -411,7 +404,7 @@ export default function Home() {
                             <DialogHeader>
                               <DialogTitle>Konfirmasi Penghapusan</DialogTitle>
                               <DialogDescription>
-                                Apakah Anda yakin ingin menghapus riwayat ini? Tindakan ini tidak dapat dibatalkan.
+                                Lo yakin mau hapus riwayat ini? Karena ini gabisa dibatalkan.
                               </DialogDescription>
                             </DialogHeader>
                             <DialogFooter>
