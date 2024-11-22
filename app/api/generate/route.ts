@@ -32,7 +32,7 @@ Panduan untuk deskripsi produk:
   - Ukuran: ${ukuran || 'Berikan ukuran yang spesifik dan akurat'}
   - Warna: ${warna || 'Deskripsikan warna dan tampilan visual produk'}
   - Fitur Khusus: ${fiturKhusus || 'Jelaskan fitur unik produk'}
-- Keunggulan Produk: Jelaskan minimal 5 keunggulan produk secara detail.
+- Keunggulan Produk: Jelaskan keunggulan produk secara detail dan deskriptif.
 - Kesesuaian: Jelaskan untuk siapa produk ini cocok dan pada kesempatan apa bisa digunakan.
 - Perawatan: Berikan tips perawatan produk untuk menjaga kualitas jangka panjang.
 - Layanan Pelanggan: Jelaskan secara detail layanan after-sales, garansi, dan komitmen kepuasan pelanggan.
