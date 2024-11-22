@@ -13,11 +13,11 @@ export default function ResultsDisplay({ result }: { result: ResultType | null }
     const sections = description.split('\n\n');
     return sections.map((section, index) => {
       if (section.includes(':')) {
-        const [title, content] = section.split(':', 2);
+        const [title, ...content] = section.split(':');
         return (
           <div key={index} className="mb-4">
             <h3 className="text-lg font-semibold mb-2">{title.trim()}:</h3>
-            <p className="text-sm">{content.trim()}</p>
+            <p className="text-sm">{content.join(':').trim()}</p>
           </div>
         );
       }
